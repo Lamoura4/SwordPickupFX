@@ -33,3 +33,6 @@ altar-open-angle: 100
 altar-empty-message: "&7The altar is empty... someone claimed the blade."
 # Operators with this permission can SNEAK + right-click to open the altar normally (to refill it)
 # permission: swordfx.admin  (operators by default)
+
+# Print what the plugin sees when someone right-clicks a chest/barrel (turn off when everything works)
+debug: true

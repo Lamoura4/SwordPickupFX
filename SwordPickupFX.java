@@ -14,6 +14,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Container;
 import org.bukkit.entity.Display;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
@@ -71,6 +72,7 @@ public final class SwordPickupFX extends JavaPlugin implements Listener {
         }
 
         getServer().getPluginManager().registerEvents(this, this);
+        getLogger().info("Altar + pickup handlers registered (v" + getPluginMeta().getVersion() + ")");
         Bukkit.getScheduler().runTaskTimer(this, this::scan, 20L, 10L);
     }
 
@@ -159,8 +161,13 @@ public final class SwordPickupFX extends JavaPlugin implements Listener {
 
     private ItemDisplay findLid(Block block) {
         Location center = block.getLocation().add(0.5, 0.5, 0.5);
-        for (ItemDisplay d : block.getWorld().getNearbyEntitiesByType(ItemDisplay.class, center, 0.6)) {
-            if (d.getScoreboardTags().contains(LID_TAG)) return d;
+        for (Entity e : block.getChunk().getEntities()) {
+            if (e instanceof ItemDisplay d
+                    && d.getScoreboardTags().contains(LID_TAG)
+                    && d.getWorld().equals(block.getWorld())
+                    && d.getLocation().distanceSquared(center) < 1.0) {
+                return d;
+            }
         }
         return null;
     }
@@ -229,6 +236,11 @@ public final class SwordPickupFX extends JavaPlugin implements Listener {
         BlockState state = block.getState();
         if (!(state instanceof Container container)) return;
         ItemDisplay lid = findLid(block);
+        if (getConfig().getBoolean("debug", false)) {
+            getLogger().info("[debug] " + event.getPlayer().getName() + " right-clicked " + block.getType()
+                    + " at " + block.getX() + " " + block.getY() + " " + block.getZ()
+                    + " | lid display found: " + (lid != null) + " | sneaking: " + event.getPlayer().isSneaking());
+        }
         if (lid == null) return; // not an altar
 
         Player player = event.getPlayer();
@@ -243,6 +255,7 @@ public final class SwordPickupFX extends JavaPlugin implements Listener {
         for (int i = 0; i < inv.getSize(); i++) {
             if (isSword(inv.getItem(i))) { slot = i; break; }
         }
+        if (getConfig().getBoolean("debug", false)) getLogger().info("[debug] sword slot in container: " + slot);
         if (slot < 0) {
             String msg = getConfig().getString("altar-empty-message", "");
             if (msg != null && !msg.isBlank()) player.sendMessage(LEGACY.deserialize(msg));
@@ -255,10 +268,10 @@ public final class SwordPickupFX extends JavaPlugin implements Listener {
         if (stack.getAmount() > 1) { stack.setAmount(stack.getAmount() - 1); inv.setItem(slot, stack); }
         else inv.setItem(slot, null);
 
-        startReveal(block, lid, sword);
+        startReveal(block, lid, sword, player.getLocation());
     }
 
-    private void startReveal(Block block, ItemDisplay lid, ItemStack sword) {
+    private void startReveal(Block block, ItemDisplay lid, ItemStack sword, Location playerLoc) {
         World world = block.getWorld();
         Location center = block.getLocation().add(0.5, 0.5, 0.5);
         Location start = center.clone().add(0, 0.45, 0);
@@ -270,9 +283,19 @@ public final class SwordPickupFX extends JavaPlugin implements Listener {
             if (display[0] != null && !display[0].isDead()) display[0].remove();
             if (!dropped[0]) {
                 dropped[0] = true;
-                Item it = world.dropItem(start.clone().add(0, 1.6, 0), sword);
-                it.setVelocity(new Vector(0, 0.2, 0));
+                // Pop the sword out toward the player who clicked, so it lands in front of the altar
+                Vector dir = playerLoc.toVector().subtract(center.toVector());
+                dir.setY(0);
+                if (dir.lengthSquared() < 0.01) dir = new Vector(1, 0, 0);
+                dir.normalize();
+                Location dropLoc = center.clone().add(dir.clone().multiply(1.0)).add(0, 1.2, 0);
+                Item it = world.dropItem(dropLoc, sword);
+                it.setVelocity(dir.clone().multiply(0.12).setY(0.25));
                 it.setPickupDelay(20);
+                if (getConfig().getBoolean("debug", false)) {
+                    getLogger().info("[debug] reveal finished, sword dropped at " + dropLoc.getBlockX() + " "
+                            + dropLoc.getBlockY() + " " + dropLoc.getBlockZ());
+                }
             }
             animateLid(lid, false, 8);
             running.remove(block);

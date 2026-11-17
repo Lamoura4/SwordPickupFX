@@ -1,0 +1,35 @@
+# Announcement sent in chat to EVERYONE when a player picks up the Lifesteal Sword.
+# Use & colour codes. %player% = the player's name.
+broadcast: "&8[&4!&8] &c%player% &7has claimed the &4&lLifesteal Sword&7!"
+
+# Private message (chat only) sent just to the player who picked it up. One line per entry.
+private-message:
+  - "&8&m                                        "
+  - "&4&lYou hold the Lifesteal Sword."
+  - "&cEvery kill you make is a ban. No second chances."
+  - "&7The whole server knows your name now. Keep it sharp, keep it close."
+  - "&8&m                                        "
+
+# Sounds played to every online player (volume 1.0 = normal; higher = audible from further away)
+thunder-sound: "entity.lightning_bolt.thunder"
+portal-sound: "block.end_portal.spawn"
+sound-volume: 1.0
+# Delay between the thunder and the end-portal sound, in ticks (20 ticks = 1 second)
+portal-delay-ticks: 20
+
+# If true, operators picking up the sword (e.g. via /lsword give) do NOT trigger the effects
+ignore-ops: false
+
+# Also recognise the sword by its name "Lifesteal Sword" on a netherite sword,
+# in case the plugin's hidden tag is different on your server version.
+match-name: true
+
+# ---------------- Sword Altar (chest with the custom model) ----------------
+# Side the lid hinges on: north, south, east or west
+altar-lid-hinge: "west"
+# How far the lid swings open, in degrees
+altar-open-angle: 100
+# Message when someone right-clicks an altar that has no sword inside
+altar-empty-message: "&7The altar is empty... someone claimed the blade."
+# Operators with this permission can SNEAK + right-click to open the altar normally (to refill it)
+# permission: swordfx.admin  (operators by default)
